@@ -1,0 +1,169 @@
+class PortSyncSyncMsg
+
+instance variables
+
+  private localPortNumber : nat;
+  private syncReceiptTimeoutTime : nat;
+
+  private followUpCorrectionField : nat :=0;
+  private sourcePortIdentity : nat :=0;
+  private logMessageInterval : nat :=0;
+  private preciseOriginTimeStamp : nat :=0;
+  private upstreamTxTime : nat :=0;
+  private rateRatio : nat :=0;
+  private gmTimeBaseIndicator : nat :=0;
+  private lastGmPhaseChange : nat :=0;
+  private lastGmFreqChange : nat :=0;
+
+operations
+
+public getPortNum: () ==> nat
+getPortNum() ==
+	return localPortNumber;
+
+-- Creates a MessageSyncSync message with all fiels initialized to 0 
+public PortSyncSyncMsg: () ==> PortSyncSyncMsg
+PortSyncSyncMsg () ==
+(
+  followUpCorrectionField := 0;
+  sourcePortIdentity := 0;
+  preciseOriginTimeStamp := 0;
+  upstreamTxTime := 0;
+  rateRatio := 0;
+  gmTimeBaseIndicator := 0;
+  lastGmPhaseChange := 0;
+  lastGmFreqChange := 0;
+);
+
+public PortSyncSyncMsg: PortSyncSyncMsg ==> PortSyncSyncMsg
+PortSyncSyncMsg (m) ==
+(
+  followUpCorrectionField := m.getCorrection();
+  sourcePortIdentity := m.getsourcePortIdentity();
+  preciseOriginTimeStamp := m.getTS();
+  upstreamTxTime := m.getUsTxTime();
+  rateRatio := m.getrateRatio();
+  gmTimeBaseIndicator := m.getTimeBase();
+  lastGmPhaseChange := m.getPhaseChange();
+  lastGmFreqChange := m.getFreqChange();
+);
+
+public copyMsg: PortSyncSyncMsg ==> ()
+copyMsg(m) ==
+(
+  followUpCorrectionField := m.getCorrection();
+  sourcePortIdentity := m.getsourcePortIdentity();
+  preciseOriginTimeStamp := m.getTS();
+  upstreamTxTime := m.getUsTxTime();
+  rateRatio := m.getrateRatio();
+  gmTimeBaseIndicator := m.getTimeBase();
+  lastGmPhaseChange := m.getPhaseChange();
+  lastGmFreqChange := m.getFreqChange();
+);
+
+public makeEmpty : () ==> ()
+makeEmpty() ==
+(
+  localPortNumber := 0;
+  syncReceiptTimeoutTime := 0;
+
+  followUpCorrectionField := 0;
+  sourcePortIdentity := 0;
+  preciseOriginTimeStamp := 0;
+  upstreamTxTime := 0;
+  rateRatio := 0;
+  gmTimeBaseIndicator := 0;
+  lastGmPhaseChange := 0;
+  lastGmFreqChange := 0;
+);
+
+public showMessage: () ==> ()
+showMessage () ==
+(
+  IO`print("\n=== PortSyncSyncMessage contents ===");
+  IO`print("\n followUpCorrectionField: ");
+  IO`print(followUpCorrectionField);
+  IO`print("\n sourcePortIdentity: ");
+  IO`print(sourcePortIdentity);
+  IO`print("\n logMessageInterval: ");
+  IO`print(logMessageInterval);
+  IO`print("\n preceiseOriginTimeStamp: ");
+  IO`print(preciseOriginTimeStamp);
+  IO`print("\n upstreamTxTime: ");
+  IO`print(upstreamTxTime);
+  IO`print("\n rateRatio: ");
+  IO`print(rateRatio);
+  IO`print("\n gmTimeBaseIndicator: ");
+  IO`print(gmTimeBaseIndicator);
+  IO`print("\n lastGmPhaseChange: ");
+  IO`print(lastGmPhaseChange);
+  IO`print("\n lastGmFreqChange: ");
+  IO`print(lastGmFreqChange);
+  IO`print("\n=== END OF PortSyncSyncMessage contents ===");
+);
+
+public setMsgContents: seq of nat ==> ()
+setMsgContents(msg) ==
+(
+  followUpCorrectionField := msg(1);
+  sourcePortIdentity := msg(2);
+  preciseOriginTimeStamp := msg(3);
+  upstreamTxTime := msg(4);
+  rateRatio := msg(5);
+  gmTimeBaseIndicator := msg(6);
+  lastGmPhaseChange := msg(7);
+  lastGmFreqChange := msg(8);
+);
+
+public setFollowUpCr : nat ==> ()
+setFollowUpCr(fucr) ==
+(
+  followUpCorrectionField := fucr;
+);
+
+public setPreciseOTS : nat ==> ()
+setPreciseOTS(ts) ==
+  preciseOriginTimeStamp := ts;
+
+public setLastPhaseChange : nat ==> ()
+setLastPhaseChange(pc) ==
+  lastGmPhaseChange := pc;
+
+public setLastFreqChange : nat ==> ()
+setLastFreqChange(fc) ==
+  lastGmFreqChange := fc;
+
+public getTS : () ==> nat
+getTS () ==
+  return preciseOriginTimeStamp;
+
+public getCorrection : () ==> nat
+getCorrection() ==
+  return followUpCorrectionField;
+
+public getUsTxTime : () ==> nat
+getUsTxTime() ==
+  return upstreamTxTime;
+
+public getTimeBase: () ==> nat
+getTimeBase() ==
+  return gmTimeBaseIndicator;
+	
+public getPhaseChange: () ==> nat
+getPhaseChange() ==
+  return lastGmPhaseChange;
+
+public getFreqChange: () ==> nat
+getFreqChange() ==
+  return lastGmFreqChange;
+
+public getrateRatio : () ==> nat
+getrateRatio () ==
+	return rateRatio;
+
+public getsourcePortIdentity: () ==> nat
+getsourcePortIdentity () ==
+	return sourcePortIdentity;
+
+
+end PortSyncSyncMsg

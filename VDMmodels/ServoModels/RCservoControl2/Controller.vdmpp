@@ -1,0 +1,32 @@
+
+class Controller
+
+instance variables
+
+  private pwmGenerator : PWMgenerator;
+  private outputInterface : gpioInterface;
+
+operations
+
+public Controller: gpioInterface * PWMgenerator  ==> Controller
+Controller (gpio,p) ==
+(
+  outputInterface := gpio;
+  -- Create a position logger
+  pwmGenerator := p;
+);
+
+public getOutputInterface: () ==> gpioInterface
+getOutputInterface() ==
+ return outputInterface;
+
+-- Operations running in the controller
+public timeStep: nat ==> ()
+timeStep(time) ==
+(
+ skip;
+);
+
+
+
+end Controller

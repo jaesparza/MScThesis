@@ -1,0 +1,3 @@
+gnuplot -p autoPlotPos.p
+gnuplot -p autoPlotClk.p
+gnuplot -p autoPlotSig.p

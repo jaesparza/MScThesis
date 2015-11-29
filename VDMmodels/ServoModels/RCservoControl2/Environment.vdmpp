@@ -1,0 +1,68 @@
+
+class Environment
+
+instance variables
+
+  clk : Clock;
+  simTimeMax : nat := 1200;
+  currentSimTime : nat := 0;
+
+  outputInterface : gpioInterface;
+  controller : Controller;
+
+  sampler1 : Sampler;
+  posLog : PositionLogger;
+
+  pwmUnit : PWMgenerator;
+
+operations
+
+public run : () ==> ()
+run() ==
+(
+  -- ### Simulation setup
+  -- Create a clock
+  clk := new Clock();
+
+  -- Define a microcontroller
+
+  posLog := new PositionLogger();
+
+  -- Attach the gpio generating the PWM signal to the environment
+  outputInterface := new gpioInterface(2);
+  -- Create a PWMgenerator and attach it to the output
+  pwmUnit := new PWMgenerator(outputInterface,1,posLog);
+
+  controller := new Controller(outputInterface,pwmUnit);
+  -- Set the initial pulse duration to 10 ms
+  pwmUnit.pulseDuration(10); 
+
+  -- Create a virtual scope and attach it to the generated
+  -- PWM output.
+  -- Using channel 1 from the GPIO block.
+  sampler1 := new Sampler(outputInterface,1);
+
+  -- ### Run simulation
+  while (clk.getSimTime() <= simTimeMax) do
+  (	
+    currentSimTime := clk.getSimTime();
+    IO`print("\nSimulation time step: ");
+    IO`print(clk.getSimTime());
+    
+    controller.timeStep(currentSimTime);
+    pwmUnit.timeStep();
+    
+
+    sampler1.sample();
+    clk.tick();
+  );
+
+   -- ### Simulation tear down
+   sampler1.dumpToFile();
+   pwmUnit.recoverLogs();
+   sampler1.dumpClock();
+
+   IO`print("## Model Over ##");
+);
+
+end Environment

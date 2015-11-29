@@ -1,0 +1,105 @@
+-- File:        gpioInterface.vdmrt
+-- Description: Models a blog of General Purpose Input Output interfaces
+--              The state of the GPIO is stored in the sequence state.
+--              In this case the GPIO block is used only as outputs
+-- Author:      Jose Antonio Esparza
+--              jaesparza@gmail.com
+
+class gpioInterface
+
+instance variables
+
+  -- Bus width
+  width : nat := 0;
+  -- State of each bit (true = high state, false = low state)
+  state : seq of bool := [];
+
+  -- For each bit there is a state entry in the sequence
+  inv len state = width;
+
+operations
+
+-- Class constructor. All states initialized to false by
+-- default
+public gpioInterface: nat ==> gpioInterface
+  gpioInterface(w) ==
+(
+  width := w;
+  
+  for all r in set {1,...,width}
+    do state := state ^ [false];
+
+	IO`print(state);
+  
+)
+post width = len state and
+  forall i in set {1,...,len state} & state(i) = false;
+
+-- Set a concrete bit to high level
+public setHigh: nat ==> ()
+setHigh(i) ==
+  state(i) := true
+pre i <= len state; -- Bit position should be in bit sequence
+
+-- Set a concrete bit to low level
+public setLow: nat ==> ()
+setLow(i) ==
+  state(i) := false
+pre i <= len state; -- Bit position should be in bit sequence
+
+-- Toggles the state of a certain bit.
+-- If the bit position is at high level goes to false
+-- If the bit position is at low level goes to true
+async public toggleBit: nat ==> ()
+toggleBit(i) ==
+(
+  if state(i) 
+  then state(i) := not state(i)
+  else state(i):= true;
+  Environment`sampler1.toggle();
+)
+pre i<=len state; -- Bit position should be in bit sequence
+
+-- Get the state of a certain bit
+public getState: nat ==> bool
+getState(i) ==
+   return state(i)
+pre i <= len state;
+
+-- Shows the state of all the bits in the register
+public showState: () ==> ()
+showState() ==
+  for all r in set {1,...,width}
+  do showSingle(r);
+
+-- Get the width of the gpio register
+public getWidth: () ==> nat
+getWidth() ==
+  return width;
+
+-- Prints out the state of a certain bit 
+public showSingle: nat ==> ()
+showSingle(i) ==
+( 
+  IO`print("\n bit ");
+  IO`print(i);
+  IO`print(": ");
+  IO`print(getState(i));
+)
+pre i<= len state; -- Bit position should be in bit sequence
+
+sync
+  -- Only one operation can modify the state of a bit
+  -- at a certain point of time.
+  mutex(setLow,setHigh);
+ 
+  -- Bit state cannot be retrieved if it is being set high
+  -- and vice versa.
+  mutex(setHigh,getState);
+
+  -- Bit state cannot be retrieved if it is being set low
+  -- and vice versa.
+  mutex(setLow,getState);
+
+
+end gpioInterface

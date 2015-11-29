@@ -1,0 +1,66 @@
+-- File:        Environment.vdmrt
+-- Description: Starts the simulation and waits until it has been completed. 
+--              Tears down the simulation and dumps to file the results
+-- Author:      Jose Antonio Esparza
+--              jaesparza@gmail.com
+
+class Environment
+
+values
+  
+  -- Time limit mark in the case two control signals
+  -- are going to be generated.
+  private timeLimitMark : nat = 0;
+
+instance variables
+
+  -- Create a sampler
+  public static sampler1 : Sampler := new Sampler();
+
+operations
+
+-- Run operation, simulation entry point
+public run : () ==> ()
+run() ==
+(
+  -- Assocaite the limit time mark for the loader
+  Deployment`loader.setSwitchTimeMark(timeLimitMark);
+
+  -- Associate the sampler to the PWM generator
+  Deployment`pwm.outLog := sampler1;
+ 
+  -- Start the threads
+  start(Deployment`pwm);
+  start(Deployment`loader);
+
+  wait(); -- Block until threads are done
+
+ -- Dump the sampled signals to a file
+  sampler1.dumpSignal();
+
+  -- Simulation tear down
+  printAndBye();
+
+);
+
+-- Simulation tear down
+public printAndBye: () ==> ()
+printAndBye() ==
+(
+  IO`print("[#] Generated signal: ");
+  IO`print(Deployment`pwm.outLog.log);
+  IO`print(" [#]");
+  IO`print("\n[1] Model over");
+  IO`print("\n[2] Logs generated");
+);
+
+-- Wait until it is down
+public wait : () ==> ()
+wait() ==
+  skip;
+
+sync
+ -- Sync predicate for the wait operation
+ per wait => Deployment`pwm.getFlag();
+
+end Environment

@@ -1,0 +1,30 @@
+class LocalClock
+
+instance variables
+
+  counter : nat :=0;
+
+operations
+
+private tick: () ==> ()
+tick () ==
+(
+
+  counter := counter+1;
+  IO`print("\nClock has advanced: ");
+  IO`print(counter);
+
+);
+
+public getTime : () ==> nat
+getTime () ==
+  return counter;
+
+thread
+while true do ( tick(); );
+
+
+sync
+  mutex(getTime, tick);
+
+end LocalClock

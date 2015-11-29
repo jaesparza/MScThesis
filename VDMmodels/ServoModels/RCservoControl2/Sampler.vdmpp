@@ -1,0 +1,96 @@
+
+class Sampler
+
+types
+
+	OutputTP = int * int;
+
+instance variables
+	
+  gpioUnit : gpioInterface;
+  sampledValues : seq of bool := [];
+  bitToSample : nat;
+  numValues : nat := 0;
+  inv numValues = len sampledValues;
+
+  toFile : seq of nat := [];
+	
+  writeResult : bool := false;
+  io : IO := new IO();
+
+
+operations
+
+public sample : () ==> ()
+sample () ==
+  atomic 
+  (
+    sampledValues := sampledValues ^ [gpioUnit.getState(bitToSample)];
+    numValues := numValues +1;
+  );
+
+public Sampler : gpioInterface * nat ==> Sampler
+Sampler(gpioBlock,output) ==
+(
+  gpioUnit := gpioBlock;
+  bitToSample := output;
+);
+
+public dumpToFile : () ==> ()
+dumpToFile () ==
+(
+  IO`print(sampledValues);
+
+  for all r in set {1,...,numValues}
+  do
+  (
+    IO`print(r);
+    writeResult := io.fwriteval[int]("signal.csv", r, <append>);
+    if sampledValues(r) then 
+    (
+      --IO`print(",1");
+      writeResult := io.fecho("signal.csv", ",1", <append>)
+    )
+    else 
+    ( 
+      --IO`print(",0");
+      writeResult := io.fecho("signal.csv",",0", <append>)
+     );
+
+      writeResult := io.fecho("signal.csv","\n", <append>);
+      --IO`print("\n");
+    );
+);
+
+public dumpClock : () ==> ()
+dumpClock () ==
+(
+
+  for all r in set {1,...,numValues}
+  do
+  (
+    writeResult := io.fwriteval[int]("clock.csv", r, <append>);
+    writeResult := io.fecho("clock.csv", ",0", <append>);
+    writeResult := io.fecho("clock.csv","\n", <append>);
+
+    writeResult := io.fwriteval[int]("clock.csv", r, <append>);
+    writeResult := io.fecho("clock.csv", ",1", <append>);
+    writeResult := io.fecho("clock.csv","\n", <append>);
+
+    writeResult := io.fwriteval[real]("clock.csv", r+0.5, <append>);
+    writeResult := io.fecho("clock.csv", ",1", <append>);
+    writeResult := io.fecho("clock.csv","\n", <append>);
+
+    writeResult := io.fwriteval[real]("clock.csv", r+0.5, <append>);
+    writeResult := io.fecho("clock.csv", ",0", <append>);
+    writeResult := io.fecho("clock.csv","\n", <append>);
+   )
+);
+
+public assignOutput : gpioInterface ==> ()
+assignOutput (gpioU) ==
+(
+  gpioUnit := gpioU;
+);
+
+end Sampler

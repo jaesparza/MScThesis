@@ -1,0 +1,69 @@
+-- File:        Sampler.vdmrt
+-- Description: Stores the generated signal values and allows file dumping in CSV 
+--              format.
+-- Author:      Jose Antonio Esparza
+--              jaesparza@gmail.com
+
+class Sampler
+
+instance variables
+
+  -- Sequence of read values
+  public log : seq of nat := [];
+
+  -- Auxiliary variable in order to store the result of
+  -- the write to file operation.
+  writeResult : bool := false;
+
+  -- Instace of the IO class in order to write
+  -- to the file
+  io :IO := new IO();
+
+  -- Skip the first three spurious values
+  public  r : nat := 3;
+
+operations
+
+-- Toggle the read value in the sampling input.
+async public toggle : () ==> ()
+toggle() ==
+(
+  duration(0) log := log ^ [time];
+);
+
+public dumpSignal : () ==> ()
+dumpSignal () ==
+(
+  -- Create signal.csv in the case it does not exist
+  -- Clean up previous contents in the case the file exists
+  writeResult := io.fecho("signal.csv", "", <start>);
+
+  -- Write the logged time values with the proper format
+  while r < (len Deployment`pwm.outLog.log - 1)
+  do
+  (
+    writeResult := io.fwriteval[int]("signal.csv", Deployment`pwm.outLog.log(r), <append>);
+    writeResult := io.fecho("signal.csv", ",0", <append>);
+    writeResult := io.fecho("signal.csv","\n", <append>);
+
+    writeResult := io.fwriteval[int]("signal.csv", Deployment`pwm.outLog.log(r), <append>);
+    writeResult := io.fecho("signal.csv", ",1", <append>);
+    writeResult := io.fecho("signal.csv","\n", <append>);
+
+    writeResult := io.fwriteval[int]("signal.csv", Deployment`pwm.outLog.log(r+1), <append>);
+    writeResult := io.fecho("signal.csv", ",1", <append>);
+    writeResult := io.fecho("signal.csv","\n", <append>);
+
+    writeResult := io.fwriteval[int]("signal.csv", Deployment`pwm.outLog.log(r+1), <append>);
+    writeResult := io.fecho("signal.csv", ",0", <append>);
+    writeResult := io.fecho("signal.csv","\n", <append>);
+    
+    r := r+2;
+   )
+);
+
+sync
+  -- Two toggle operations cannot be run at the same time
+  mutex(toggle);
+
+end Sampler

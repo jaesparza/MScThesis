@@ -1,0 +1,53 @@
+class MediaDepAP
+
+instance variables
+
+  private portID : nat;
+
+  private mdMsgReceived : MDSyncMsg; -- Media Dependant Sync message received from the port
+  private mdMsgSend : MDSyncMsg; -- Media Dependant Sync message to be sent to the port
+
+  private port : Port;
+
+operations
+
+
+public MediaDepAP: nat ==> MediaDepAP
+MediaDepAP(id) ==
+(
+	portID := id;
+
+	mdMsgReceived := new MDSyncMsg();
+	mdMsgSend := new MDSyncMsg();
+);
+
+public flushBuffers : () ==> ()
+flushBuffers() ==
+(
+	mdMsgReceived.makeEmpty();
+	mdMsgSend.makeEmpty();
+);
+
+public getPortID: () ==> nat
+getPortID() ==
+  return portID;
+
+public setPort: Port ==> ()
+setPort(pt) ==
+  port := pt
+post port.getPortID() = portID;
+
+public sendToPort: () ==> ()
+sendToPort() ==
+(
+  port.rcvMDmsg(mdMsgReceived);
+);
+
+public setReceivedMedia : MDSyncMsg ==> ()
+setReceivedMedia(m) ==
+(
+	mdMsgReceived := m;
+	sendToPort();
+);
+
+end MediaDepAP

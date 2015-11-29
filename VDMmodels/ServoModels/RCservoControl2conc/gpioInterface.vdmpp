@@ -1,0 +1,73 @@
+
+class gpioInterface
+
+instance variables
+
+  width : nat := 0;
+  state : seq of bool := [];
+  inv len state = width;
+
+operations
+
+public gpioInterface: nat ==> gpioInterface
+  gpioInterface(w) ==
+(
+  width := w;
+  
+  for all r in set {1,...,width}
+    do state := state ^ [false];
+
+	IO`print(state);
+  
+)
+post width = len state and
+  forall i in set {1,...,len state} & state(i) = false;
+
+
+public setHigh: nat ==> ()
+setHigh(i) ==
+  state(i) := true
+pre i <= len state;
+
+public setLow: nat ==> ()
+setLow(i) ==
+  state(i) := false
+pre i <= len state;
+
+public toggleBit: nat ==> ()
+toggleBit(i) ==
+  if state(i) 
+  then state(i) := not state(i)
+  else state(i):= true
+pre i<=len state;
+
+public getState: nat ==> bool
+getState(i) ==
+   return state(i)
+pre i <= len state;
+
+public showState: () ==> ()
+showState() ==
+  for all r in set {1,...,width}
+  do showSingle(r);
+
+
+public getWidth: () ==> nat
+getWidth() ==
+  return width;
+
+public showSingle: nat ==> ()
+showSingle(i) ==
+( 
+  IO`print("\n bit ");
+  IO`print(i);
+  IO`print(": ");
+  IO`print(getState(i));
+);
+
+sync
+  mutex(setLow,setHigh);
+  mutex(setHigh,getState);
+  mutex(setLow,getState);
+
+end gpioInterface

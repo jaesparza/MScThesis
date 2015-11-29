@@ -1,0 +1,21 @@
+
+class Clock
+
+instance variables
+	
+	private tickNum : nat := 0;
+
+operations
+
+public tick : () ==> ()
+tick() ==
+(
+	tickNum := tickNum +1;
+);
+
+public getSimTime: () ==> nat
+getSimTime() ==
+ return tickNum;
+
+
+end Clock

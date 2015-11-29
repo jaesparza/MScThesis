@@ -1,0 +1,132 @@
+class Port
+
+types
+
+  Roles = <Master> | <Slave> | <Passive> | <Disabled>;
+
+instance variables
+
+  private portID : nat;
+
+  private role : token;
+
+  private mdMsgSend : MDSyncMsg; -- Media dependant message to be sent to the Media Dependant Layer
+  private mdMsgReceived : MDSyncMsg; -- Media dependant message received from the Media Dependant Layer
+
+  private pMsgSend : PortSyncSyncMsg; -- Port Sync Sycn message to be sent to Site Sync
+  private pMsgReceived : PortSyncSyncMsg; -- Port Sync Sync message received from Site Sync
+	
+  private mediaDepAP : MediaDepAP;
+  private ss : SiteSync; -- Each port is attached to a SiteSync entity
+	
+
+operations
+
+public setRole : token ==> ()
+setRole(rl) ==
+  role := rl;
+
+public getRole : () ==> token
+getRole() ==
+  return role;
+
+
+public showMsg: char * char ==> ()
+showMsg(t,io) ==
+(
+  cases t:
+   (t='p') -> ( if io='s' then pMsgSend.showMessage() else pMsgReceived.showMessage()),
+   (t='m') -> (if io='s' then mdMsgSend.showMessage() else mdMsgReceived.showMessage())
+end;
+);
+
+-- Receives a message from the media dependant layer
+public rcvMDmsg : MDSyncMsg ==> ()
+rcvMDmsg(mdm) ==
+(  
+  mdMsgReceived.copyMsg(mdm);
+  mdMsgReceived.showMessage();
+);
+
+-- Takes the received media dependant message, extracts the
+-- relevant information and creates a portSS message.
+-- Forwards the message to the siteSync entity. 
+public processAndF : () ==> ()
+processAndF()==
+(
+  pMsgSend.setMsgContents(mdMsgReceived.getAsSeq());
+  pMsgSend.showMessage();
+
+  -- Send the message to the siteSync entity
+  ss.putMsg(pMsgSend,mk_token("slave"));
+
+);
+
+-- Receives a message from the SiteSync entity
+public rcvPmsg : PortSyncSyncMsg ==> ()
+rcvPmsg(pmsg) == 
+  pMsgReceived := pmsg;
+
+-- Gets the PortSyncSync message to be sent
+-- This message is retrieved from the SiteSync entity
+public getPSSmsg : () ==> PortSyncSyncMsg
+getPSSmsg() ==
+  return pMsgSend;
+
+-- Gets the MDSync message to be sent.
+-- This message is retrieved from the Media Dependant Layer
+public getMDmsg : () ==> MDSyncMsg
+getMDmsg() ==
+  return mdMsgSend;
+
+public getPortID : () ==> nat
+getPortID() ==
+  return portID;
+
+public setPortID : nat ==> ()
+setPortID(pID) ==
+  portID := pID;
+
+-- Creates a new port entity
+public Port : nat ==> Port
+Port(id) ==
+(
+	-- Associate an ID to the port
+	portID := id;
+
+	-- Create message buffers for MediaDendant Interface communication
+	mdMsgReceived := new MDSyncMsg();
+	mdMsgSend := new MDSyncMsg();
+
+	-- Create message buffers for Site Sync Sync interface
+	pMsgReceived := new PortSyncSyncMsg();
+	pMsgSend := new PortSyncSyncMsg();
+
+	flushBuffers();
+);
+
+public attachSiteSync: SiteSync ==> ()
+attachSiteSync(newSS) ==
+  ss := newSS;
+
+public flushBuffers : () ==> ()
+flushBuffers() ==
+(
+	mdMsgReceived.makeEmpty();
+	mdMsgSend.makeEmpty();
+	pMsgReceived.makeEmpty();
+	pMsgSend.makeEmpty();
+);
+
+public setMediaDep : MediaDepAP ==> ()
+setMediaDep(md) ==
+  mediaDepAP := md
+post mediaDepAP.getPortID() = portID;
+
+private setReceivedData: () ==> ()
+setReceivedData()==
+(
+  
+);
+
+end Port

@@ -1,0 +1,37 @@
+
+class Controller
+
+instance variables
+
+  private pwmGenerator : PWMgenerator;
+  private outputInterface : gpioInterface;
+
+operations
+
+public Controller: gpioInterface * PWMgenerator  ==> Controller
+Controller (gpio,p) ==
+(
+  outputInterface := gpio;
+  -- Create a position logger
+  pwmGenerator := p;
+);
+
+public getOutputInterface: () ==> gpioInterface
+getOutputInterface() ==
+ return outputInterface;
+
+-- Operations running in the controller
+public timeStep: () ==> ()
+timeStep() ==
+(
+ skip;
+);
+
+thread
+
+while true do
+(  timeStep();
+  Environment`timerRef.WaitRelative(1);
+);
+
+end Controller

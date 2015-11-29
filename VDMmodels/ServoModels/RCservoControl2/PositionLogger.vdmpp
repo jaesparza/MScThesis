@@ -1,0 +1,39 @@
+
+class PositionLogger
+
+types
+
+  private OutputTP = int * int;
+
+instance variables
+
+  private numValues : nat := 0;
+  private sampledValues : seq of real := [];
+	
+  private writeResult : bool := false;
+  private io : IO := new IO();
+
+operations
+
+public pushValue: real ==> ()
+pushValue(angle) ==
+(
+  sampledValues:= sampledValues ^ [angle];
+);
+
+public dumpToFile:() ==> ()
+dumpToFile () ==
+(
+  IO`print(sampledValues);
+  
+  for all r in set {1,..., len(sampledValues)}
+  do
+  (
+    writeResult := io.fwriteval[real]("position.csv", sampledValues(r), <append>);
+    writeResult := io.fecho("position.csv", ",1", <append>);
+    writeResult := io.fecho("position.csv","\n", <append>);
+  );  
+
+);
+
+end PositionLogger

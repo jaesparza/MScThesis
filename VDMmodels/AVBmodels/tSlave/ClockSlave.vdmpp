@@ -1,0 +1,112 @@
+class ClockSlave
+
+instance variables
+
+  private clockID : nat := 0;
+  private clockSlaveTime : nat :=0;
+
+  private localTime : nat :=0;
+  private syncReceiptTime : nat :=0;			-- 
+  private syncReceiptLocalTime : nat :=0;		-- Time stamp at which the syncReceiptTime was received
+  private gmTimeBaseID : nat :=0;				-- Time base used by the GM
+
+  private lastGmPhaseChange : nat :=0;		-- Last change in phase e.g. 3 seconds
+  private lastGmFreqChange : nat :=0;			-- Last change in frequency e.g. +3 pulses per minute
+
+  private receivedPSS : PortSyncSyncMsg;	
+
+  private receivedPSSFlag : bool := false; -- Access must be syncrhonized
+  private localTick : bool := false; -- Access must be synchronized
+
+operations
+
+public ClockSlave: nat ==> ClockSlave
+ClockSlave(n) ==
+  clockID := n;
+
+public activeBehaviour: () ==> ()
+activeBehaviour() ==
+(
+  if receivedPSSFlag
+  then adjustClock();
+  if localTick
+  then updateSlaveTime()
+  else skip
+		-- do nothing until it is preemted again
+);
+
+-- slaveTime is incremented by the local Clock time interval divided by the rate ratio memeber of the received PSS structure
+public updateSlaveTime: () ==> ()
+updateSlaveTime() ==
+(
+	
+)
+pre localTick
+post not localTick;
+
+
+public adjustClock: () ==> ()
+adjustClock() ==
+(
+  syncReceiptTime := receivedPSS.getTS() + receivedPSS.getCorrection(); -- To be added neighbo propagation delay  + delay assimetry
+  syncReceiptLocalTime := receivedPSS.getUsTxTime(); -- To be added neighbour propagation delay and delay assimetry ratios
+	
+  gmTimeBaseID := receivedPSS.getTimeBase();
+
+  lastGmPhaseChange := receivedPSS.getPhaseChange();
+  lastGmFreqChange := receivedPSS.getFreqChange();
+
+  receivedPSSFlag := false;
+
+  showTimeInfo();
+)
+pre receivedPSSFlag 
+post not receivedPSSFlag;
+
+
+public showTimeInfo: () ==> ()
+showTimeInfo() ==
+(
+  IO`print("\nClockID ");
+  IO`print(clockID);
+  IO`print("\n");
+  IO`print("\t|--> syncReceiptTime: \t\t");
+  IO`print(syncReceiptTime);
+  IO`print("\n\t|--> syncReceiptLocalTime: \t");
+  IO`print(syncReceiptLocalTime);
+  IO`print("\n\t|--> gmTimeBaseID: \t\t");
+  IO`print(gmTimeBaseID);
+  IO`print("\n\t|--> lastGmPhaseChange: \t");
+  IO`print(lastGmPhaseChange);
+  IO`print("\n\t|--> lastGmFreqChange: \t\t");
+  IO`print(lastGmFreqChange);
+  IO`print(" ");
+);
+
+public receiveNewPSS: PortSyncSyncMsg ==> ()
+receiveNewPSS(pss) ==
+(
+  receivedPSS := pss;	
+  receivedPSSFlag := true;
+)
+post receivedPSSFlag;
+
+public provideTimeInfo: () ==> token
+provideTimeInfo() ==
+  return mk_token(syncReceiptTime, syncReceiptLocalTime);
+
+public setFlag: () ==> ()
+setFlag() ==
+  receivedPSSFlag := true;
+
+
+public setClockID: nat ==> ()
+setClockID(n) ==
+	clockID := n
+pre clockID = 0;
+
+public getClockID: () ==> nat
+getClockID() ==
+  return clockID;
+
+end ClockSlave

@@ -1,0 +1,49 @@
+class Timer
+
+instance variables
+
+  freq : nat;
+  flag : bool := true;
+
+operations
+
+public Timer: (nat) ==> Timer
+Timer(fq) ==
+(
+  freq := fq;
+);
+
+private wait: () ==> ()
+wait() == 
+(
+
+);
+
+private toggleFlag: () ==> ()
+toggleFlag() ==
+  flag := not flag;
+
+public getFlag: () ==> bool
+getFlag() ==
+  return flag;
+
+public activeBehaviour:() ==> ()
+activeBehaviour() ==
+(
+  
+);
+
+thread
+
+while true do
+(
+  wait();
+  toggleFlag();
+  IO`print("\nFlag state: ");
+  IO`print(flag);
+);
+
+sync
+  mutex(toggleFlag,getFlag);
+
+end Timer

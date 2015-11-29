@@ -1,0 +1,86 @@
+class SiteSync
+
+types
+  source = <ClockMaster> | <ClockSlave> | <Port>;
+  
+  psMsg ::
+    psMessage : PortSyncSyncMsg
+    sender  : token;
+
+instance variables
+
+  isGM : bool := false;
+
+  private ports : seq of Port;
+  inv not isGM <=> exists1 p in set elems ports & 
+    p.getRole() = mk_token("slave");
+
+  inv len ports > 0;
+
+  private slavePort : nat := 0;
+  private pSyncMsg : seq of psMsg := [];
+  private clockSlave : ClockSlave;
+
+operations
+
+public distributeMsg : () ==> ()
+distributeMsg() ==
+(
+  if not isGM then
+  (
+    clockSlave.receiveNewPSS((hd ([pSyncMsg(i) | i in set inds pSyncMsg & pSyncMsg(i).sender = mk_token("slave")])).psMessage);
+  );
+
+  -- Check if there are master ports and distribute time information
+  if len ports > 1 then
+    for all i in set {2,..., len ports}
+      do
+        ports(i).rcvPmsg(pSyncMsg(i).psMessage);
+);
+
+/*
+let slv : psMsg in 
+(
+	if not isGM then
+	(
+		slv := hd [pSyncMsg(i) | i in set inds pSyncMsg & pSyncMsg(i).psMessage.getPortNum() = slavePort];
+		clockSlave.receiveNewPSS(slv.psMessage);
+		IO`print(slv);
+	);
+);	
+*/
+
+
+public attachClockSlave : ClockSlave ==> ()
+attachClockSlave(ck) ==
+  clockSlave := ck;
+
+public putMsg: PortSyncSyncMsg * token ==> ()
+putMsg(pss,source) ==
+(
+  pSyncMsg := pSyncMsg ^ [mk_psMsg(new PortSyncSyncMsg(pss),source)];
+);
+
+/*
+let pm:psMsg 
+  in
+	(
+		pm.psMessage.copyMsg(pss);
+		pm.sender := source;
+		pSyncMsg := pSyncMsg ^ [pm];
+	);
+*/
+
+public attachPorts: seq of Port ==> ()
+attachPorts(newPorts) ==
+  ports := newPorts;
+
+public SiteSync: seq of Port ==> SiteSync
+SiteSync(newPorts) ==
+  attachPorts(newPorts);
+
+public dummyCall: () ==> ()
+dummyCall() ==
+  IO`print("\nCorrectly Attached");
+
+end SiteSync

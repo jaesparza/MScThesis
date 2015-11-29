@@ -1,0 +1,44 @@
+-- File:        Deployment.vdmrt
+-- Description: Architecture definition. The GPIO block is defined 
+--              as a separated hardware block. The controller CPU runs the 
+--              rest of the software.
+-- Author:      Jose Antonio Esparza
+--              jaesparza@gmail.com
+
+system Deployment
+	
+instance variables
+
+  -- Definition of a controller unit, acting as CPU
+  controller : CPU := new CPU(<FCFS>, 1E9);
+
+  -- Definition of a hardware GPIO block
+  gpioBlock : CPU := new CPU(<FCFS>, 100E6);
+
+  -- Associate the controller to the GPIO block
+  controlRegister : BUS := new BUS(<CSMACD>, 72E13, {controller,gpioBlock});
+ 
+  -- Static definition of the deployable objects
+  public static loader : Controller := new Controller();
+  public static pwm : PWMunit := new PWMunit();
+  public static gpio : gpioInterface := new gpioInterface(2);
+
+operations
+
+-- Setup and actual deployment
+public Deployment : () ==> Deployment
+Deployment () == 
+(
+  -- Set a reference to the pwm generator from the loader
+  loader.setPWM(pwm);
+  -- Set a reference to the GPIO block from the PWMgenerator
+  pwm.setGPIO(gpio);
+
+  -- Deploy the active objects in different CPUs
+  controller.deploy(loader);
+  controller.deploy(pwm);
+  gpioBlock.deploy(gpio);
+
+);
+
+end Deployment

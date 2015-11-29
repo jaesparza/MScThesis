@@ -1,0 +1,72 @@
+class main
+
+
+instance variables
+
+  mdMsg : MDSyncMsg;
+  mediaDep : MediaDepAP;
+
+  port : Port;
+  ss : SiteSync;
+  cs : ClockSlave;
+
+  testMsg : PortSyncSyncMsg;
+
+  clk : LocalClock;
+
+operations
+
+
+public run: () ==> ()
+run() ==
+(
+  clk := new LocalClock();
+
+  start(clk);
+
+  skip;
+	
+  IO`print("\nStarting model");
+
+  mediaDep := new MediaDepAP(1); -- Create a media dependant AP
+  port := new Port(1);  -- Create a port
+
+  port.setMediaDep(mediaDep); -- Link port with media dependant AP
+  port.setRole(mk_token("slave")); -- Make the port slave
+	
+  if port.getRole() = mk_token("slave") -- Check if there is slave port 
+  then IO`print("\nSlave present");
+
+  mediaDep.setPort(port); -- Link media dependant AP with port
+  
+  -- Create the site sync entity
+  ss := new SiteSync([port]);
+  port.attachSiteSync(ss);
+
+  cs := new ClockSlave(1);
+  ss.attachClockSlave(cs);
+
+  testMsg := new PortSyncSyncMsg();
+	
+  testMsg.setMsgContents([10,2,3,4,5,6,70,89]);
+
+  cs.receiveNewPSS(testMsg);
+  cs.setFlag();
+  cs.adjustClock();
+
+
+  mdMsg := new MDSyncMsg(); -- Creates a MDependant message
+  mdMsg.setMsgContents([1,2,3,4,5,6,7,8]); -- Sets the inital contents
+	
+  mediaDep.setReceivedMedia(mdMsg); -- Push the created message into the media dependant layer
+  port.processAndF();
+  port.showMsg('p','s');
+  ss.distributeMsg();
+  cs.adjustClock();
+
+
+  IO`print("\nModel over");
+ -- while true do ();
+);
+
+end main

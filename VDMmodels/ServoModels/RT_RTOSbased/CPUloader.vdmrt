@@ -1,0 +1,84 @@
+-- File:        CPUloader.vdmrt
+-- Description: Loads the CPU. Optionally capable of selecting between two predefined
+--              signals running in the hardware generator.
+-- Author:      Jose Antonio Esparza
+--              jaesparza@gmail.com
+
+class  Controller
+
+-- Definition of the CPU loader running in a controller
+
+values
+  -- Execution limit for the CPU loader
+  executionLimit : nat = 90;
+
+instance variables
+
+  -- Switch time mark. Initialize to a higher value
+  -- in the case a discrete control is used from the 
+  -- loader.
+  switchTimeMark :nat := 0;
+
+  progressCounter : nat := 0;
+  pwmref: PWMunit;
+  cSent :bool := false;
+
+operations
+
+-- Specify the switch time mark in the case several
+-- control comands are issued to the controller
+public setSwitchTimeMark : nat ==> ()
+setSwitchTimeMark(tm) ==
+  switchTimeMark := tm;
+
+-- Time consumer operation loading the CPU. The
+-- function is not performing any computation, just
+-- taking CPU time.
+public timeConsumer : () ==> ()
+timeConsumer () ==
+(
+  -- Simulated operations performed during
+  -- the first 9 iterations.
+  cases progressCounter:
+    (1) -> duration(1E6) timeEater(),
+    (2) -> duration(2E6) timeEater(),
+    (3) -> duration(3E6) timeEater(),
+    (4) -> duration(4E6) timeEater(),
+    (5) -> duration(5E6) timeEater(),
+    (6) -> duration(6E6) timeEater(),
+    (7) -> duration(7E6) timeEater(),
+    (8) -> duration(8E6) timeEater(),
+    (9) -> duration(9E6) timeEater(),
+    others -> ()
+   end;
+
+  -- Increment the progress counter 
+  progressCounter := progressCounter + 1;
+);
+
+-- Issues a change in the continuous time hardware
+-- signal generation.
+public controlSignal : () ==> ()
+controlSignal () ==
+(
+  pwmref.setPeriod(2);
+);
+
+-- Establish the reference to the PWM unit
+public setPWM : PWMunit ==> ()
+setPWM(p) ==
+  pwmref := p;
+
+-- Do nothing
+public timeEater : () ==> ()
+timeEater() ==
+  skip;
+
+thread
+  -- Periodic thread executed every 55 milliseconds
+  periodic (55E6,0,0,0) (timeConsumer);
+
+sync
+  mutex(timeConsumer);
+
+end Controller

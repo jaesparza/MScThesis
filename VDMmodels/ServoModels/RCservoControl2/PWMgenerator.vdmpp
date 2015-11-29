@@ -1,0 +1,138 @@
+
+class PWMgenerator
+
+values
+
+  -- Number of clock ticks per cycle
+  private ticksPerPulse :nat = 200;
+
+  -- 10 ticks = 1 ms
+  private msFactor : nat = 10;
+
+  -- Signal frequency in Hz
+  private frequency : nat = 50;
+
+instance variables
+
+  -- Ussed GPIO block and channel number
+  private output : gpioInterface;
+  private channel : nat := 0;
+
+  -- Internal counter used to define the
+  -- transition from high to low inside
+  -- each cycle.
+  
+  private tickCounter : nat := 0;
+  inv tickCounter >= 0 and tickCounter <= ticksPerPulse;
+  -- tickCounter --> is set ot 0 at the beginning of A
+  --             --> incremented each clock tick
+  --             --> when tickCounter reaches its limit
+  --                 the line is asserted for the rest of the
+  --                 cycle.
+  --  The end of A and beggining of B deppends on the desired
+  --  PWM signal
+  -- 
+  --  A      B     A      B       
+  -- <--><-------><--><------->
+  --  __           __           
+  -- |  |         |  |         
+  -- |  |_________|  |_________
+
+  private tickLimit : nat := 0;
+  inv tickLimit > 0 and tickLimit < ticksPerPulse;
+
+  -- Higher duty cycle values might damage the servo
+  inv getDutyCycle() < 10;
+
+  public posLog : PositionLogger;
+
+operations
+
+-- Constructor
+-- Associates a GPIO block and a channel.
+public PWMgenerator : gpioInterface * nat * PositionLogger ==> PWMgenerator
+PWMgenerator(out,ch,posL) ==
+(
+  output := out;
+  channel := ch;
+  tickLimit := ticksPerPulse/2;
+  posLog := posL;
+)
+post output.getWidth() >= channel and
+   not channel = 0 and
+   getDutyCycle() = 0.5;
+
+public calculatePosition: () ==> real
+calculatePosition() ==
+  return (180 * ((tickLimit/msFactor) -1));
+
+
+-- Takes in account the duty cycle and generates the signal
+private generateCycle: () ==> ()
+generateCycle() ==
+  cases tickCounter:
+     (0) -> setOn(),   -- Start of the new cycle
+     (tickLimit) -> setOff(), -- Time limit for the high level has been reached
+     others -> skip    -- Keep the line as it is
+  end;
+
+
+public timeStep: () ==> ()
+timeStep() ==
+(
+  -- Generate the part of the continuous signal
+  -- that corresponds to this time step.
+  generateCycle();
+  IO`print("\n## Calculated position in degrees: ");
+  IO`print(calculatePosition());
+  posLog.pushValue(calculatePosition());
+
+  -- Update the pulse counter in the case the resolution
+  -- limit is reached
+  if tickCounter >= ticksPerPulse then
+    tickCounter := 0
+  else
+    tickCounter := tickCounter +1;
+);
+
+-- Sets pulse duration in milliseconds
+public pulseDuration : nat ==> ()
+pulseDuration(d) ==
+ tickLimit := d;
+
+-- Assert high the associated GPIO channel
+private setOn: () ==> ()
+setOn() ==
+  output.setHigh(channel);
+
+-- Assert low the associated GPIO channel
+private setOff: () ==> ()
+setOff() ==
+  output.setLow(channel);
+
+public gettickLimit: () ==> nat
+gettickLimit() ==
+ return tickLimit;
+
+public setLimit : nat ==> ()
+setLimit(l) ==
+  tickLimit := l;
+
+public recoverLogs: () ==> ()
+recoverLogs() ==
+(
+  posLog.dumpToFile();
+);
+
+functions
+
+-- Calculates the current duty cycle of the signal
+-- defined by timeHigh/timeCycle
+public getDutyCycle : () -> real
+getDutyCycle() ==
+ gettickLimit()/ticksPerPulse
+pre ticksPerPulse > 0;
+
+
+
+end PWMgenerator

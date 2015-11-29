@@ -1,0 +1,114 @@
+-- File:        PWMgenerator.vdmrt
+-- Description: Generates a PWM signal. Two default signals of different duration are
+--              available.
+-- Author:      Jose Antonio Esparza
+--              jaesparza@gmail.com
+
+class PWMunit
+
+instance variables
+
+  -- References to the sampler and the
+  -- controller
+  public outLog : Sampler;
+  public controller : Controller;
+
+  -- Allows the generation of two different
+  -- predefined signals
+  private periodSelector : nat := 1;
+
+  -- Sets a reference to the GPIO interface
+  public outputInt : gpioInterface;
+
+  -- Done flag updated when operation completion
+  -- has been reached
+  public done : bool := false;
+
+  -- Counter keeping track of the
+  -- simulation progress
+  public runCount : nat := 0;
+
+  -- Number of control periods that have to
+  -- be generated
+  public exLimit : nat := 30;
+
+operations 
+
+-- Associate a GPIO block to the PWM unit
+-- controller
+public setGPIO : gpioInterface ==> ()
+setGPIO(g) ==
+  outputInt := g;
+
+-- Associate a controller to the PWMgenerator
+public PWMunit : Controller ==> PWMunit
+PWMunit(c) ==
+  controller := c;
+
+-- Generate a single contorol cycle. Two different
+-- control puses can be selected depending on the
+-- target position.
+private generateSignal : () ==> ()
+generateSignal() ==
+(
+  while runCount < exLimit do
+  (
+    if (getPeriod() = 2) then 
+    ( -- Set output to high
+      duration (0) outputInt.toggleBit(1);
+      duration (2E6) (); -- Wait 2 milliseconds
+      -- Set output to low
+      duration (0) outputInt.toggleBit(1);
+      duration (18E6) (); -- Wait 18 milliseconds
+      duration (0) runCount := runCount +1;
+    )
+    -- In the second control case 1 millisecond
+    -- is spent in the control pulse. The rest
+    -- of the operation is analogous to the
+    -- previous case.
+    else if getPeriod() = 1 then
+    (
+      duration (0) outputInt.toggleBit(1);
+      duration (1E6) ();
+      duration (0) outputInt.toggleBit(1);
+      duration (19E6) ();
+      duration (0) runCount := runCount +1;
+    )
+  );
+  duration (0) done := true -- Mark the thread as completed
+);
+
+-- Get completion flag
+public getFlag : () ==> bool
+getFlag() ==
+  return done;
+
+-- Get the selected period by the discrete processing
+-- unit
+private getPeriod : () ==> nat
+getPeriod() ==
+  return periodSelector;
+
+-- Sets the control period signal
+public setPeriod: nat ==> ()
+setPeriod(p) ==
+  periodSelector := p;
+
+thread 
+   -- Procedural thread, running until completion
+   generateSignal();
+
+sync
+  -- The signal generation should not be executed
+  -- while the completion flag is requested
+  mutex(generateSignal,getFlag);
+
+  -- There should not be two instances of generateSignal
+  -- running in parallel
+  mutex(generateSignal);
+  
+  -- Target period must not be set while the period is
+  -- retrieved
+  mutex(setPeriod,getPeriod);
+ 
+end PWMunit

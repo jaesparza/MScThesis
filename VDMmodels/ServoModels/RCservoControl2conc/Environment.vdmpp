@@ -1,0 +1,72 @@
+
+class Environment
+
+instance variables
+
+  clk : Clock;
+  simTimeMax : nat := 2400;
+  currentSimTime : nat := 0;
+
+  outputInterface : gpioInterface;
+  controller : Controller;
+
+  public  sampler1 : Sampler;
+  posLog : PositionLogger;
+
+  pwmUnit : PWMgenerator;
+
+  public static timerRef : TimeStamp := new TimeStamp(4);
+
+operations
+
+public run : () ==> ()
+run() ==
+(
+  -- ### Simulation setup
+  -- Create a clock
+  clk := new Clock();
+
+  -- Define a microcontroller
+
+  posLog := new PositionLogger();
+
+  -- Attach the gpio generating the PWM signal to the environment
+  outputInterface := new gpioInterface(2);
+  -- Create a PWMgenerator and attach it to the output
+  pwmUnit := new PWMgenerator(outputInterface,1,posLog);
+
+  controller := new Controller(outputInterface,pwmUnit);
+  -- Set the initial pulse duration to 10 ms
+  pwmUnit.pulseDuration(10); 
+
+  -- Create a virtual scope and attach it to the generated
+  -- PWM output.
+  -- Using channel 1 from the GPIO block.
+  sampler1 := new Sampler(outputInterface,1);
+
+  start(clk);
+  start(pwmUnit);
+  start(controller);
+  start(sampler1);
+  
+  -- ### Run simulation
+  while (timerRef.GetTime() <= simTimeMax) do
+  (	
+    timerRef.WaitRelative(1);
+    wait();
+  );
+
+   -- ### Simulation tear down
+   sampler1.dumpToFile();
+   pwmUnit.recoverLogs();
+   sampler1.dumpClock();
+
+   IO`print("## Model Over ##");
+);
+
+
+public wait: () ==> ()
+wait() ==
+  skip;
+
+end Environment
